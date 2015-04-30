@@ -1,0 +1,8 @@
+[package]
+name = "hangman"
+version = "0.1.0"
+authors = ["panicbit <panicbit@users.noreply.github.com>"]
+
+[dependencies]
+rand = "0.3"
+rustbox = "0.5"
