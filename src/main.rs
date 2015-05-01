@@ -155,12 +155,14 @@ fn print_guesses_left(game: &Game, rustbox: &RustBox) {
 }
 
 fn process_guess_input(game: &mut Game, guess: char, rustbox: &RustBox) {
+    let is_valid = guess.is_alphabetic();
     let already_guessed = game.guesses().contains(&guess);
-    let success = game.guess(guess);
-    let msg = match (already_guessed, success) {
-        (true, _) => format!("Alreay guessed that!"),
-        (_, true) => format!("Success!"),
-        (_, false) =>  format!("There's no '{}' :(", guess)
+    let success = is_valid && game.guess(guess);
+    let msg = match (is_valid, already_guessed, success) {
+        (false, _, _) => format!("Invalid guess '{}'", guess),
+        (_, true, _) => format!("Already guessed that!"),
+        (_, _, true) => format!("Success!"),
+        (_, _, false) =>  format!("There's no '{}' :(", guess)
     };
     rustbox.print(1, 7, rustbox::RB_BOLD, Color::White, Color::Black, &msg);
 }
