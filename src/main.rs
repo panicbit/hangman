@@ -196,6 +196,7 @@ fn main() {
 
     if game.is_won() {
         println!("Yay, you WIN!");
+        println!("(The word was: '{}')", game.peek_word());
     }
     else {
         println!("He's dead, Jim! (You LOOSE!)");
