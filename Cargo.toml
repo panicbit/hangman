@@ -2,7 +2,8 @@
 name = "hangman"
 version = "0.1.0"
 authors = ["panicbit <panicbit@users.noreply.github.com>"]
+edition = "2018"
 
 [dependencies]
-rand = "0.3"
-rustbox = "0.5"
+rand = "0.8.4"
+rustbox = "0.11.0"

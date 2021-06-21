@@ -6,15 +6,15 @@ use std::fs::File;
 use std::io::{self,BufReader,BufRead,Error};
 use std::process::exit;
 use std::collections::HashSet;
-use rand::Rng;
+use rand::{Rng, seq::SliceRandom};
 use rustbox::Event::KeyEvent;
-use rustbox::Key::{Esc,Char};
+use rustbox::Key::{self, Char, Esc};
 use rustbox::{RustBox,Color};
 
 fn load_dict<P: AsRef<Path>>(dict_path: P) -> Result<Vec<String>,io::Error> {
     let base_path = Path::new("/usr/share/dict");
     let path = base_path.join(dict_path);
-    let mut file = try!(File::open(path));
+    let mut file = File::open(path)?;
     let mut reader = BufReader::new(file);
     let lines = reader.lines();
     Ok(
@@ -174,8 +174,8 @@ fn print_main(game: &Game, rustbox: &RustBox) {
 }
 
 fn main() {
-    let dict = load_dict("british").ok().expect("can't open dict");
-    let word = rand::thread_rng().choose(&dict).expect("no words found");
+    let dict = load_dict("american-english").ok().expect("can't open dict");
+    let word = dict.choose(&mut rand::thread_rng()).expect("no words found");
 
     let ref mut game = Game::new(word);
     let rustbox = RustBox::init(Default::default()).ok().expect("rustbox initialization");
@@ -185,9 +185,9 @@ fn main() {
     while game.is_running() {
         rustbox.clear();
         match rustbox.poll_event(false) {
-            Ok(KeyEvent(Some(Char(guess)))) =>
+            Ok(KeyEvent(Key::Char(guess))) =>
                 process_guess_input(game, guess, &rustbox),
-            Ok(KeyEvent(Some(Esc))) => {drop(rustbox); exit(0)}
+            Ok(KeyEvent(Key::Esc)) => {drop(rustbox); exit(0)}
             _ => rustbox.print(1, 7, rustbox::RB_BOLD, Color::White, Color::Black, "Eh.")
         }
         print_main(game, &rustbox);
