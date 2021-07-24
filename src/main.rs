@@ -1,21 +1,22 @@
 extern crate rand;
 extern crate rustbox;
+
 use std::path::Path;
 use std::convert::AsRef;
 use std::fs::File;
-use std::io::{self,BufReader,BufRead,Error};
+use std::io::{self, BufReader, BufRead};
 use std::process::exit;
 use std::collections::HashSet;
-use rand::{Rng, seq::SliceRandom};
+use rand::{seq::SliceRandom};
 use rustbox::Event::KeyEvent;
-use rustbox::Key::{self, Char, Esc};
-use rustbox::{RustBox,Color};
+use rustbox::Key;
+use rustbox::{RustBox, Color};
 
 fn load_dict<P: AsRef<Path>>(dict_path: P) -> Result<Vec<String>,io::Error> {
     let base_path = Path::new("/usr/share/dict");
     let path = base_path.join(dict_path);
-    let mut file = File::open(path)?;
-    let mut reader = BufReader::new(file);
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
     let lines = reader.lines();
     Ok(
         lines
@@ -38,7 +39,7 @@ struct Letter {
 impl Letter {
     fn new(ch: char) -> Letter {
         Letter {
-            ch: ch,
+            ch,
             revealed: false
         }
     }
@@ -49,7 +50,11 @@ impl Letter {
             self.reveal();
         }
     }
-    fn peek(&self) -> char { self.ch }
+
+    fn peek(&self) -> char {
+        self.ch
+    }
+
     fn get(&self) -> Option<char> {
         if self.is_revealed() {
             Some(self.peek())
@@ -73,18 +78,30 @@ impl Game {
         }
     }
 
-    fn is_lost(&self) -> bool {self.guesses_left <= 0}
-    fn is_won(&self) -> bool {self.word.iter().all(Letter::is_revealed)}
-    fn is_running(&self) -> bool {!self.is_lost() && !self.is_won()}
+    fn is_lost(&self) -> bool {
+        self.guesses_left == 0
+    }
+
+    fn is_won(&self) -> bool {
+        self.word.iter().all(Letter::is_revealed)
+    }
+
+    fn is_running(&self) -> bool {
+        !self.is_lost() && !self.is_won()
+    }
+
     fn get_word(&self) -> Vec<Option<char>> {
         self.word.iter().map(Letter::get).collect()
     }
+
     fn peek_word(&self) -> String {
         self.word.iter().map(Letter::peek).collect()
     }
+
     fn word_contains(&self, ch: char) -> bool {
         self.word.iter().any(|letter| letter.peek() == ch)
     }
+
     fn guess(&mut self, guess: char) -> bool {
         if !self.is_running() || self.guesses_made.contains(&guess) {
             return false
@@ -100,10 +117,14 @@ impl Game {
         self.guesses_made.insert(guess);
         success
     }
+
     fn guesses(&self) -> &HashSet<char> {
         &self.guesses_made
     }
-    fn guesses_left(&self) -> u32 { self.guesses_left }
+
+    fn guesses_left(&self) -> u32 {
+        self.guesses_left
+    }
 }
 
 fn print_word(game: &Game, rustbox: &RustBox) {
@@ -111,8 +132,8 @@ fn print_word(game: &Game, rustbox: &RustBox) {
         .get_word()
         .iter()
         .map(|letter| match letter {
-            &None => format!("_ "),
-            &Some(ch) => format!("{} ", ch)
+            None => "_ ".to_string(),
+            Some(ch) => format!("{} ", ch)
         })
         .fold(String::new(), |mut buf, s| {
             buf.push_str(&s);
@@ -160,8 +181,8 @@ fn process_guess_input(game: &mut Game, guess: char, rustbox: &RustBox) {
     let success = is_valid && game.guess(guess);
     let msg = match (is_valid, already_guessed, success) {
         (false, _, _) => format!("Invalid guess '{}'", guess),
-        (_, true, _) => format!("Already guessed that!"),
-        (_, _, true) => format!("Success!"),
+        (_, true, _) => "Already guessed that!".to_string(),
+        (_, _, true) => "Success!".to_string(),
         (_, _, false) =>  format!("There's no '{}' :(", guess)
     };
     rustbox.print(1, 7, rustbox::RB_BOLD, Color::White, Color::Black, &msg);
@@ -174,22 +195,25 @@ fn print_main(game: &Game, rustbox: &RustBox) {
 }
 
 fn main() {
-    let dict = load_dict("american-english").ok().expect("can't open dict");
+    let dict = load_dict("american-english").expect("can't open dict");
     let word = dict.choose(&mut rand::thread_rng()).expect("no words found");
 
-    let ref mut game = Game::new(word);
-    let rustbox = RustBox::init(Default::default()).ok().expect("rustbox initialization");
+    let game = &mut Game::new(word);
+    let rustbox = RustBox::init(Default::default()).expect("rustbox initialization");
 
     print_main(game, &rustbox);
     rustbox.present();
+
     while game.is_running() {
         rustbox.clear();
+
         match rustbox.poll_event(false) {
             Ok(KeyEvent(Key::Char(guess))) =>
                 process_guess_input(game, guess, &rustbox),
             Ok(KeyEvent(Key::Esc)) => {drop(rustbox); exit(0)}
             _ => rustbox.print(1, 7, rustbox::RB_BOLD, Color::White, Color::Black, "Eh.")
         }
+
         print_main(game, &rustbox);
         rustbox.present();
     }
